@@ -28,11 +28,8 @@ from .handlers import HandlerBase
 from .image import construct_rootfs
 from .image import download_image
 from .image import run_analyzers
-from prometheus_client import CollectorRegistry, Gauge, push_to_gateway, Summary, Histogram, Counter
 
 _LOGGER = logging.getLogger(__name__)
-registry = CollectorRegistry()
-_METRIC_ANALYZER_JOB = Gauge('job_runtime','Runtime of package release job', registry=registry)
 
 def extract_buildlog(input_text: str) -> typing.List[dict]:
     """Extract Docker image build log and get all installed packages based on ecosystem."""
@@ -64,12 +61,5 @@ def extract_image(image_name: str, timeout: int = None, *, registry_credentials:
 
         result = run_analyzers(rootfs_path)
         result['layers'] = layers
-        _METRIC_ANALYZER_JOB.inc()
-        push_gateway = os.getenv('PROMETHEUS_PUSH_GATEWAY', '127.0.0.1:9091')
-        if push_gateway:
-            try:
-                push_to_gateway(push_gateway, job='job-runtime', reigstry=registry)
-            excep Exception as e:
-                _LOGGER.exception('An error occurred pushing the metrics: {}'.format(str(e)))
 
         return result
