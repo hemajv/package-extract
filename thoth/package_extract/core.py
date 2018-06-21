@@ -31,9 +31,6 @@ from .image import run_analyzers
 from prometheus_client import CollectorRegistry, pushadd_to_gateway, Gauge
 
 _LOGGER = logging.getLogger(__name__)
-prometheus_registry = CollectorRegistry()
-_METRIC_ANALYZER_JOB = Gauge('package_extract_time','Runtime of package extract job', registry=prometheus_registry)
-
 def extract_buildlog(input_text: str) -> typing.List[dict]:
     """Extract Docker image build log and get all installed packages based on ecosystem."""
     result = []
@@ -49,8 +46,11 @@ def extract_buildlog(input_text: str) -> typing.List[dict]:
 def extract_image(image_name: str, timeout: int = None, *, registry_credentials: str = None,
                   tls_verify: bool=True) -> dict:
     """Extract dependencies from an image."""
-    """Begin the timer for when the job starts"""
-    with _METRIC_ANALYZER_JOB.time():
+    #Start prometheus
+    prometheus_registry = CollectorRegistry()
+    metric_analyzer_job = Gauge('package_extract_time','Runtime of package extract job', registry=prometheus_registry)
+    #Begin the timer for when the job starts
+    with metric_analyzer_job.time():
         image_name = quote(image_name)
         with tempfile.TemporaryDirectory() as dir_path:
             download_image(
